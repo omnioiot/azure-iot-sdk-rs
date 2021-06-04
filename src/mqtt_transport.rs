@@ -197,18 +197,23 @@ impl MqttTransport {
     pub(crate) async fn new<TS>(
         hub_name: &str,
         device_id: String,
+        model_id: Option<String>,
         token_source: TS,
     ) -> crate::Result<Self>
     where
         TS: TokenSource + Send + Sync + 'static,
     {
-        let user_name = format!("{}/{}/?api-version=2018-06-30", hub_name, device_id);
+        // &model-id=dtmi:<string>;<version
+        let user_name = if let Some(model_id) = model_id {
+            format!("{}/{}/?api-version=2020-09-30&model-id={}", hub_name, device_id, model_id)
+        } else {
+            format!("{}/{}/?api-version=2020-09-30", hub_name, device_id)
+        };
 
         let expiry = Utc::now() + Duration::days(1);
         trace!("Generating token that will expire at {}", expiry);
         let token = token_source.get(&expiry);
         trace!("Using token {}", token);
-
         let socket = mqtt_connect(&hub_name, &device_id, user_name, token).await?;
 
         let (read_socket, write_socket) = tokio::io::split(socket);
@@ -327,7 +332,7 @@ impl Transport for MqttTransport {
     }
 
     async fn ping(&mut self) -> crate::Result<()> {
-        info!("Sending PINGREQ to broker");
+        debug!("Sending PINGREQ to broker");
 
         let pingreq_packet = PingreqPacket::new();
 
@@ -376,7 +381,7 @@ impl Transport for MqttTransport {
                 match packet {
                     // TODO: handle ping req from server and we should send ping response in return
                     VariablePacket::PingrespPacket(..) => {
-                        info!("Receiving PINGRESP from broker ..");
+                        debug!("Receiving PINGRESP from broker ..");
                     }
                     VariablePacket::PublishPacket(ref publ) => {
                         let mut message = Message::new(publ.payload().to_vec());

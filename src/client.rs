@@ -70,13 +70,14 @@ impl IoTHubClient {
     pub async fn new<TS>(
         hub_name: &str,
         device_id: String,
+        model_id: Option<String>,
         token_source: TS,
     ) -> crate::Result<IoTHubClient>
     where
         TS: TokenSource + Send + Sync + Clone + 'static,
     {
         let transport =
-            ClientTransport::new(hub_name, device_id.clone(), token_source.clone()).await?;
+            ClientTransport::new(hub_name, device_id.clone(), model_id, token_source.clone()).await?;
 
         Ok(Self {
             device_id,
