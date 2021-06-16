@@ -381,7 +381,7 @@ impl Transport for MqttTransport {
                 match packet {
                     // TODO: handle ping req from server and we should send ping response in return
                     VariablePacket::PingrespPacket(..) => {
-                        debug!("Receiving PINGRESP from broker ..");
+                        info!("Receiving PINGRESP from broker ..");
                     }
                     VariablePacket::PublishPacket(ref publ) => {
                         let mut message = Message::new(publ.payload().to_vec());
