@@ -332,7 +332,7 @@ impl Transport for MqttTransport {
     }
 
     async fn ping(&mut self) -> crate::Result<()> {
-        debug!("Sending PINGREQ to broker");
+        info!("Sending PINGREQ to broker");
 
         let pingreq_packet = PingreqPacket::new();
 
