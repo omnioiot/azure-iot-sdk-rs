@@ -107,7 +107,7 @@ impl MessageBuilder {
     /// https://github.com/Azure/azure-iot-sdk-csharp/blob/67f8c75576edfcbc20e23a01afc88be47552e58c/iothub/device/src/Transport/Mqtt/MqttIotHubAdapter.cs#L1068-L1086
     /// If you need to add support for a new property,
     /// you should create a new public function that sets the appropriate wire id.
-    fn set_system_property(mut self, property_name: &str, value: String) -> Self {
+    pub fn set_system_property(mut self, property_name: &str, value: String) -> Self {
         self.system_properties
             .insert(property_name.to_owned(), value);
         self
