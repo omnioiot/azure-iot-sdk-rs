@@ -101,11 +101,24 @@ async fn tcp_connect(iot_hub: &str) -> crate::Result<TlsStream<TcpStream>> {
 
     trace!("Connected to tcp socket {:?}", socket);
 
+    // TODO(tj): Here we should load a certificate (if provided), and 3
+    //
+    // See: https://docs.rs/native-tls/0.2.4/native_tls/struct.TlsConnectorBuilder.html
+    // See: https://docs.rs/native-tls/0.2.8/native_tls/struct.Certificate.html
+
+    let mut connbuilder = native_tls::TlsConnector::builder();
+    connbuilder.min_protocol_version(Some(native_tls::Protocol::Tlsv12));
+
+    connbuilder.danger_accept_invalid_certs(true);
+
     let cx = TlsConnector::from(
-        native_tls::TlsConnector::builder()
-            .min_protocol_version(Some(native_tls::Protocol::Tlsv12))
-            .build()
-            .unwrap(),
+        connbuilder.build().unwrap()
+        //native_tls::TlsConnector::builder()
+        //    .min_protocol_version(Some(native_tls::Protocol::Tlsv12))
+        //    .danger_accept_invalid_certs(true)
+        //    //.add_root_certificate(cert)
+        //    .build()
+        //    .unwrap(),
     );
 
     let socket = cx.connect(&iot_hub, socket).await?;
