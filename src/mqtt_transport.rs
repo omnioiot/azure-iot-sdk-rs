@@ -208,7 +208,10 @@ impl MqttTransport {
     {
         // &model-id=dtmi:<string>;<version
         let user_name = if let Some(model_id) = model_id {
-            format!("{}/{}/?api-version=2020-09-30&model-id={}", hub_name, device_id, model_id)
+            format!(
+                "{}/{}/?api-version=2020-09-30&model-id={}",
+                hub_name, device_id, model_id
+            )
         } else {
             format!("{}/{}/?api-version=2020-09-30", hub_name, device_id)
         };
@@ -238,7 +241,8 @@ impl MqttTransport {
         let mut mqtt_transport = mqtt_transport;
         #[cfg(feature = "automatic-ping")]
         {
-            mqtt_transport.ping_join_handle = Some(Arc::new(mqtt_transport.ping_on_secs_interval(8)));
+            mqtt_transport.ping_join_handle =
+                Some(Arc::new(mqtt_transport.ping_on_secs_interval(8)));
         }
 
         Ok(mqtt_transport)
