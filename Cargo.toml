@@ -17,7 +17,6 @@ default = [
   "twin-properties",
   "with-provision",
   "error-handling-messages",
-  "ping-response",
   "automatic-ping",
 ]
 direct-methods = []
