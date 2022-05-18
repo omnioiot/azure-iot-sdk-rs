@@ -1,3 +1,4 @@
+use crate::dtmi::Dtmi;
 use crate::message::Message;
 #[cfg(feature = "direct-methods")]
 use crate::DirectMethodResponse;
@@ -76,13 +77,28 @@ impl IoTHubClient {
     where
         TS: TokenSource + Send + Sync + Clone + 'static,
     {
-        let transport =
-            ClientTransport::new(hub_name, device_id.clone(), model_id, token_source.clone()).await?;
+        let mut builder = Self::builder(hub_name, device_id, token_source);
 
-        Ok(Self {
+        if let Some(id) = model_id {
+            builder = builder.model_id(id)?;
+        }
+
+        builder.build().await
+    }
+
+    /// Create a new builder
+    pub fn builder<TS>(
+        hub_name: &str,
+        device_id: String,
+        token_source: TS,
+    ) -> IoTHubClientBuilder<TS> {
+        IoTHubClientBuilder {
+            hub_name: hub_name.into(),
             device_id,
-            transport,
-        })
+            token_source,
+            root_ca: None,
+            model_id: None,
+        }
     }
 
     /// Send a device to cloud message for this device to the IoT Hub
@@ -188,5 +204,66 @@ impl IoTHubClient {
     ///
     pub async fn ping(&mut self) -> crate::Result<()> {
         self.transport.ping().await
+    }
+}
+
+/// A builder for an IoTHubClient
+#[allow(missing_debug_implementations)]
+pub struct IoTHubClientBuilder<TS> {
+    hub_name: String,
+    device_id: String,
+    model_id: Option<Dtmi>,
+    token_source: TS,
+    root_ca: Option<native_tls::Certificate>,
+}
+
+impl<TS: TokenSource + Send + Sync + Clone + 'static> IoTHubClientBuilder<TS> {
+    /// Build the IoTHubClient.
+    ///
+    /// Consumes the builder.
+    pub async fn build(self) -> crate::Result<IoTHubClient> {
+        let IoTHubClientBuilder {
+            hub_name,
+            device_id,
+            model_id,
+            token_source,
+            root_ca,
+        } = self;
+
+        #[cfg(not(feature = "https-transport"))]
+        let transport = ClientTransport::new(
+            &hub_name,
+            device_id.clone(),
+            model_id,
+            token_source.clone(),
+            root_ca,
+        )
+        .await?;
+        #[cfg(feature = "https-transport")]
+        let transport =
+            ClientTransport::new(&hub_name, device_id.clone(), token_source.clone()).await?;
+
+        Ok(IoTHubClient {
+            device_id,
+            transport,
+        })
+    }
+
+    /// Add a certificate to the set of roots that the client will trust
+    ///
+    /// The provided certificate must be PEM encoded
+    pub fn root_ca(mut self, root_ca: impl AsRef<[u8]>) -> crate::Result<Self> {
+        let root_ca = native_tls::Certificate::from_pem(root_ca.as_ref())?;
+        self.root_ca = Some(root_ca);
+        Ok(self)
+    }
+
+    /// Provide a PNP model ID
+    ///
+    /// Is only use with MQTT transport
+    pub fn model_id(mut self, pnp_model_id: impl AsRef<str>) -> crate::Result<Self> {
+        let dtmi = pnp_model_id.as_ref().parse()?;
+        self.model_id = Some(dtmi);
+        Ok(self)
     }
 }
