@@ -1,7 +1,7 @@
 #[cfg(not(feature = "https-transport"))]
 use std::collections::HashMap;
 
-use chrono::{Duration, Utc};
+use time::{Duration, OffsetDateTime};
 #[cfg(feature = "https-transport")]
 use hyper::{header, Body, Client, Method, Request, StatusCode};
 #[cfg(feature = "https-transport")]
@@ -100,7 +100,7 @@ async fn get_iothub_from_provision_service(
     device_key: &str,
     max_retries: i32,
 ) -> Result<ProvisionedResponse, Box<dyn std::error::Error>> {
-    let expiry = Utc::now() + Duration::days(1);
+    let expiry = OffsetDateTime::now_utc() + Duration::days(1);
     let expiry = expiry.timestamp();
     let sas = generate_registration_sas(scope_id, registration_id, device_key, expiry);
     let url = format!(
@@ -202,8 +202,8 @@ async fn get_iothub_from_provision_service(
         "{}/registrations/{}/{}",
         scope_id, registration_id, DPS_API_VERSION
     );
-    let expiry = Utc::now() + Duration::days(1);
-    let expiry = expiry.timestamp();
+    let expiry = OffsetDateTime::now_utc() + Duration::days(1);
+    let expiry = expiry.unix_timestamp();
     let sas = generate_registration_sas(scope_id, registration_id, device_key, expiry);
     let mut socket = mqtt_connect(DPS_HOST, registration_id, username, sas, None).await?;
 

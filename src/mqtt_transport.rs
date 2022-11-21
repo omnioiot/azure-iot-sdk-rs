@@ -20,7 +20,7 @@ use tokio::net::TcpStream;
 use tokio::sync::mpsc::{channel, Receiver};
 use tokio::sync::Mutex;
 #[cfg(feature = "automatic-ping")]
-use tokio::{task::JoinHandle, time};
+use tokio::{task::JoinHandle};
 use tokio_native_tls::{TlsConnector, TlsStream};
 
 use async_trait::async_trait;
@@ -36,7 +36,7 @@ use crate::message::MessageType;
 #[cfg(feature = "direct-methods")]
 use crate::message::{DirectMethodInvocation, DirectMethodResponse};
 use crate::{token::TokenSource, transport::Transport};
-use chrono::{Duration, Utc};
+use time::{Duration, OffsetDateTime};
 use std::sync::Arc;
 
 // Incoming topic names
@@ -223,7 +223,7 @@ impl MqttTransport {
             format!("{}/{}/?api-version=2020-09-30", hub_name, device_id)
         };
 
-        let expiry = Utc::now() + Duration::days(1);
+        let expiry = OffsetDateTime::now_utc() + Duration::days(1);
         trace!("Generating token that will expire at {}", expiry);
         let token = token_source.get(&expiry);
         trace!("Using token {}", token);
@@ -258,7 +258,7 @@ impl MqttTransport {
     ///
     #[cfg(feature = "automatic-ping")]
     fn ping_on_secs_interval(&self, ping_interval: u8) -> JoinHandle<()> {
-        let mut ping_interval = time::interval(time::Duration::from_secs(ping_interval.into()));
+        let mut ping_interval = tokio::time::interval(tokio::time::Duration::from_secs(ping_interval.into()));
         let mut cloned_self = self.clone();
         tokio::spawn(async move {
             loop {

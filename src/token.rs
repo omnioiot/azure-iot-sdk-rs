@@ -1,4 +1,4 @@
-use chrono::{DateTime, Utc};
+use time::OffsetDateTime;
 use hmac::{Hmac, Mac, NewMac};
 use sha2::Sha256;
 
@@ -20,7 +20,7 @@ pub enum TokenError {
 /// Provider for authentication
 pub trait TokenSource {
     /// Get the authentication value from the source
-    fn get(&self, expiry: &DateTime<Utc>) -> String;
+    fn get(&self, expiry: &OffsetDateTime) -> String;
 }
 
 impl std::fmt::Debug for dyn TokenSource {
@@ -43,7 +43,7 @@ impl<'a> SasTokenSource<'_> {
 }
 
 impl<'a> TokenSource for SasTokenSource<'_> {
-    fn get(&self, _: &DateTime<Utc>) -> String {
+    fn get(&self, _: &OffsetDateTime) -> String {
         self.sas.to_string()
     }
 }
@@ -103,8 +103,8 @@ impl DeviceKeyTokenSource {
 }
 
 impl TokenSource for DeviceKeyTokenSource {
-    fn get(&self, expiry: &DateTime<Utc>) -> String {
-        let expiry_timestamp = expiry.timestamp();
+    fn get(&self, expiry: &OffsetDateTime) -> String {
+        let expiry_timestamp = expiry.unix_timestamp();
 
         let to_sign = format!("{}\n{}", &self.resource_uri, expiry_timestamp);
 
@@ -128,7 +128,7 @@ pub struct UsernamePasswordTokenSource {
 }
 
 impl TokenSource for UsernamePasswordTokenSource {
-    fn get(&self, _expiry: &DateTime<Utc>) -> String {
+    fn get(&self, _expiry: &OffsetDateTime) -> String {
         self.password.clone()
     }
 }
@@ -155,7 +155,7 @@ mod tests {
     fn test_sas_source() {
         // Should pass value through unchanged
         let sas_token_source = SasTokenSource::new("MySasString");
-        assert_eq!(sas_token_source.get(&Utc::now()), "MySasString".to_string());
+        assert_eq!(sas_token_source.get(&OffsetDateTime::now_utc()), "MySasString".to_string());
     }
 
     #[test]
